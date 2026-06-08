@@ -23,6 +23,81 @@ function! PrevTask()
     execute 'call search("^[*|]\\?\\d\\+\\.", "b")'
 endfunction
 
+if exists('*fzf#run')
+    function! FzfMatchingLines(pattern) abort
+        let l:lines = []
+        let l:lnum = 1
+        for l:line in getline(1, '$')
+            if l:line =~# a:pattern
+                call add(l:lines, printf("%4d\t%s", l:lnum, l:line))
+            endif
+            let l:lnum += 1
+        endfor
+
+        if empty(l:lines)
+            echo 'No matches for pattern: ' .. a:pattern
+            return
+        endif
+
+        let l:current_file = expand('%:p')
+        let l:current_file_escaped = shellescape(l:current_file)
+        let l:preview_cmd = "bash -c '"
+                    \ .. "n={1}; "
+                    \ .. "if command -v bat &>/dev/null; then "
+                    \ ..     "bat "
+                    \ ..         "--style=numbers "
+                    \ ..         "--color=always "
+                    \ ..         "--highlight-line \$n "
+                    \ ..         "--line-range \$((n>5?n-5:1)):\$((n+25)) -- "
+                    \ ..         l:current_file_escaped .. "; "
+                    \ .. "else "
+                    \ ..     "sed -n \"\$((n>5?n-5:1)),\$((n+25))p\" "
+                    \ ..     l:current_file_escaped .. "; "
+                    \ .. "fi'"
+
+        call fzf#run(fzf#wrap({
+                    \ 'source': l:lines,
+                    \ 'options': [
+                    \   '--delimiter', "\t",
+                    \   '--preview', l:preview_cmd,
+                    \   '--preview-window', 'right:60%:wrap',
+                    \   '--expect', 'ctrl-x,ctrl-v,ctrl-t',
+                    \   '--prompt', 'Lines> ',
+                    \ ],
+                    \ 'sink*': funcref('s:fzf_line_sink')
+                    \ }))
+    endfunction
+
+    function! s:fzf_line_sink(lines) abort
+        echom string(a:lines)
+        if len(a:lines) < 2
+            return
+        endif
+        let l:key = a:lines[0]
+        let l:entry = a:lines[1]
+        let l:lnum = str2nr(split(l:entry, '\t')[0])
+
+        let l:cmds = {
+                    \ '': 'normal! ',
+                    \ 'ctrl-x': 'split',
+                    \ 'ctrl-v': 'vsplit',
+                    \ 'ctrl-t': 'tabedit',
+                    \}
+        let l:cmd = get(l:cmds, l:key, '')
+
+        if l:cmd ==# 'normal! '
+            execute l:lnum
+        else
+            execute l:cmd .. ' +' .. l:lnum .. ' ' .. expand('%:p')
+        endif
+
+        normal! zz
+    endfunction
+
+    command! FindTask call FzfMatchingLines('^[*|]\?\d\+\.')
+    nnoremap <buffer> <leader>ft :FindTask<CR>
+endif
+
 " let b:todo_next_mark = '     <==== THIS NEXT'
 let b:todo_next_mark = '     ← NEXT'
 

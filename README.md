@@ -26,3 +26,7 @@ WIP|DONE
     * Use <leader>u to unmark them
     * Use <leader>c to change a task from complete (*) to incomplete (|)
 ```
+
+## FZF
+
+If you have fzf installed, `<leader>ft` will be bound to "FindTask". This gives a popup window with preview for searching through your top level tasks.
