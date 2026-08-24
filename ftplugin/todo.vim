@@ -1,6 +1,8 @@
 nnoremap <leader>t :call JumpToTask()<CR>
 nnoremap  ]] :call NextTask()<CR>
 nnoremap  [[ :call PrevTask()<CR>
+nnoremap  ]n :call FindMarked()<CR>
+nnoremap  [n :call FindMarkedPrev()<CR>
 nnoremap  <leader>m :call MarkNext()<CR>
 nnoremap  <leader>u :call UnMarkNext()<CR>
 nnoremap  <leader>n :call FindMarked()<CR>
@@ -118,6 +120,13 @@ function! FindMarked()
     let l:pattern = escape(b:todo_next_mark, '\')
     execute "silent /" . l:pattern
 endfunction
+
+
+function! FindMarkedPrev()
+    let l:pattern = escape(b:todo_next_mark, '\')
+    execute "silent ?" . l:pattern
+endfunction
+
 
 
 function! StartNew()
